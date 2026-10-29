@@ -1,0 +1,2670 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Khám Sức Khỏe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .no-print { display: block; }
+        
+        @keyframes success-flash {
+            0% { background-color: transparent; }
+            50% { background-color: #ecfdf5; }
+            100% { background-color: transparent; }
+        }
+        .flash-success { animation: success-flash 1s ease-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* ===== PRO CLINIC SCANNER ===== */
+.scanner-card {
+    border-radius: 20px;
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.25s ease;
+}
+
+/* SUCCESS */
+.scanner-success {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border: 2px solid #10b981;
+}
+
+/* ERROR */
+.scanner-error {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border: 2px solid #ef4444;
+}
+
+/* ICON */
+.scanner-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scanner-success .scanner-icon {
+    background: #10b981;
+    color: white;
+}
+
+.scanner-error .scanner-icon {
+    background: #ef4444;
+    color: white;
+}
+
+/* TEXT */
+.scanner-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    opacity: 0.7;
+}
+
+.scanner-name {
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.scanner-sub {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<div class="max-w-[1400px] mx-auto p-4 md:p-8 no-print">
+    <!-- Header -->
+    <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Hệ Thống Quản Lý Khám Sức Khỏe</h1>
+            <p class="text-slate-500">Developed by Cong Ly</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button onclick="showSection('import')" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-100 transition font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-plus"></i>
+                Nhập danh sách
+            </button>
+            <button onclick="showSection('scanner')" class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-qrcode"></i>
+                Quét Mã
+            </button>
+            <button onclick="openCloudModal()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-cloud"></i>
+                Đồng bộ
+            </button>
+            <button id="excelDropdownButton" data-dropdown-toggle="excelDropdown" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-xl font-semibold px-5 py-2.5 inline-flex items-center">
+                <i class="fa-solid fa-file-excel mr-2"></i>Excel<i class="fa-solid fa-chevron-down ml-2"></i>
+            </button>
+            <div id="excelDropdown" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-xl shadow w-56">
+                <ul class="py-2">
+                    <li><button type="button" onclick="showSection('import'); document.getElementById('file-input').click()" class="w-full text-left block px-4 py-2 hover:bg-gray-100 cursor-pointer"><i class="fa-solid fa-file-arrow-up text-green-500 mr-2"></i>Import Excel</button></li>
+                    <li><button type="button" onclick="exportExcel()" class="w-full text-left block px-4 py-2 hover:bg-gray-100 cursor-pointer"><i class="fa-solid fa-file-arrow-down text-green-500 mr-2"></i>Export Excel</button></li>
+                </ul>
+            </div>
+
+<button
+id="dropdownDefaultButton"
+data-dropdown-toggle="dropdownData"
+class="text-white bg-slate-700 hover:bg-slate-800
+font-medium rounded-xl font-semibold px-5 py-2.5 inline-flex items-center">
+
+<i class="fa-solid fa-database mr-2"></i>
+
+Dữ liệu
+
+<i class="fa-solid fa-chevron-down ml-2"></i>
+
+</button>
+
+<div id="dropdownData"
+class="z-10 hidden bg-white divide-y divide-gray-100 rounded-xl shadow w-56">
+
+<ul class="py-2">
+<li>
+<a
+onclick="backupData()"
+class="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
+
+<i class="fa-solid fa-download text-blue-500 mr-2"></i>
+Sao lưu dữ liệu
+
+</a>
+
+</li>
+
+<li>
+
+<a
+onclick="restoreData()"
+class="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
+
+<i class="fa-solid fa-upload text-green-500 mr-2"></i>
+Khôi phục dữ liệu
+
+</a>
+
+</li>
+
+</ul>
+
+</div>
+
+<input
+type="file"
+id="restore-file"
+accept=".json"
+class="hidden"
+onchange="handleRestore(event)">
+        </div>
+    </header>
+
+    <!-- Thống kê -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-4">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-blue-500 flex justify-between items-center">
+            <div><div class="text-slate-400 text-sm font-bold uppercase">Tổng bệnh nhân</div><div id="stat-total" class="text-4xl font-black text-slate-800">0</div></div>
+            <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i class="fa-solid fa-users text-3xl"></i></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500 flex justify-between items-center">
+            <div><div class="text-emerald-500 text-sm font-bold uppercase">Đã khám tổng</div><div id="stat-done" class="text-4xl font-black text-emerald-600">0</div></div>
+            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i class="fa-solid fa-circle-check text-3xl"></i></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-amber-500 flex justify-between items-center">
+            <div><div class="text-amber-500 text-sm font-bold uppercase">Đang chờ khám</div><div id="stat-pending" class="text-4xl font-black text-amber-600">0</div></div>
+            <div class="p-3 bg-amber-50 text-amber-600 rounded-xl"><i class="fa-solid fa-clock text-3xl"></i></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-sky-500 flex justify-between items-center">
+            <div><div class="text-sky-600 text-sm font-bold uppercase">Chụp X-Quang</div><div><span id="stat-xray" class="text-4xl font-black text-sky-700">0</span><span id="stat-xray-total" class="text-slate-400 font-semibold"> / 0</span></div></div>
+            <div class="p-3 bg-sky-50 text-sky-600 rounded-xl"><i class="fa-solid fa-x-ray text-3xl"></i></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-violet-500 flex justify-between items-center">
+            <div><div class="text-violet-600 text-sm font-bold uppercase">Xét nghiệm</div><div><span id="stat-lab" class="text-4xl font-black text-violet-700">0</span><span id="stat-lab-total" class="text-slate-400 font-semibold"> / 0</span></div></div>
+            <div class="p-3 bg-violet-50 text-violet-600 rounded-xl"><i class="fa-solid fa-flask text-3xl"></i></div>
+        </div>
+    </div>
+<div class="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
+<div class="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+
+    <div class="flex justify-between items-center mb-2">
+        <span id="progress-title" class="text-sm font-medium text-slate-600">
+            TIẾN ĐỘ KHÁM
+        </span>
+
+        <span id="progress-text"
+            class="text-sm font-bold text-blue-600">
+            0%
+        </span>
+    </div>
+
+    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+
+        <div id="progress-bar"
+            class="h-full rounded-full transition-all duration-500"
+            style="width:0%">
+        </div>
+
+    </div>
+
+</div>
+</div>
+
+    <section class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-lg font-black text-slate-800">Timeline khám trong 7 ngày</h2>
+                <p class="text-sm text-slate-500">Số lượt tiếp nhận, X-Quang và xét nghiệm theo ngày.</p>
+            </div>
+            <label class="text-sm font-semibold text-slate-600">Ngày bắt đầu
+                <input id="timeline-start" type="date" onchange="renderTimeline()" class="block mt-1 px-3 py-2 border border-slate-200 rounded-xl">
+            </label>
+        </div>
+        <div id="timeline-list" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-3"></div>
+    </section>
+
+    <!-- Nhập liệu -->
+    <section id="section-import" class="section-content bg-white p-6 rounded-2xl shadow-md mb-8 border border-slate-100">
+        <h2 class="text-xl font-bold mb-2 text-slate-700">Nhập dữ liệu đầu vào</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <button id="drop-zone" type="button" class="drop-zone flex flex-col items-center justify-center p-8 rounded-2xl bg-slate-50 cursor-pointer hover:bg-blue-50 transition-all text-center">
+                <i class="fa-solid fa-file-excel text-5xl text-green-600 mb-4"></i>
+                <span class="text-base font-bold text-slate-700">Tải File Excel (.xlsx, .xls)</span>
+                <span class="text-xs text-slate-500 mt-2">Chọn file hoặc kéo thả vào đây để nhập danh sách.</span>
+            </button>
+            <div class="flex flex-col justify-center p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                <h3 class="font-bold text-slate-700 mb-2">Cấu trúc cột Excel</h3>
+                <p class="text-sm text-slate-600">STT | Mã nhân viên | Họ và tên | Giới tính | Ngày sinh | CCCD | Bộ phận | Đơn vị | Barcode | Chụp X-Quang | Xét nghiệm</p>
+                <p class="text-xs text-slate-500 mt-2">Hai cột dịch vụ nhận Có/Không, Yes/No, 1/0 hoặc để trống. Cột Barcode là tùy chọn.</p>
+            </div>
+            <input type="file" id="file-input" class="hidden" accept=".xlsx, .xls">
+        </div>
+        <div class="hidden grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+            <div class="hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+<div class="flex flex-col justify-center h-full p-8 bg-gradient-to-br from-indigo-50 via-white to-blue-50 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+    <div class="absolute -right-6 -top-6 text-indigo-500/5 group-hover:text-indigo-500/10 transition-colors duration-500">
+        <i class="fa-solid fa-building-flag text-[120px]"></i>
+    </div>
+    
+    <div class="relative z-10">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="p-3.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200">
+                <i class="fa-solid fa-building-user text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-black text-slate-800 tracking-tight">Lọc Theo Đơn Vị</h3>
+                <p class="text-sm font-medium text-slate-500 mt-1">Dữ liệu & thống kê sẽ hiển thị theo lựa chọn</p>
+            </div>
+        </div>
+        
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fa-solid fa-filter text-indigo-500"></i>
+            </div>
+            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                <i class="fa-solid fa-chevron-down text-indigo-400"></i>
+            </div>
+        </div>
+    </div>
+</div>
+        </div>
+    </section>
+
+    <!-- Bàn quét mã -->
+    <section id="section-scanner" class="section-content hidden bg-white p-5 sm:p-8 rounded-3xl shadow-xl mb-8 border-2 border-emerald-500">
+        <div class="max-w-2xl mx-auto">
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-800 mb-5 text-center">QUÉT MÃ BỆNH NHÂN</h2>
+            <label class="block text-sm font-bold text-slate-600 mb-2" for="scan-station">Trạm đang quét</label>
+            <select id="scan-station" onchange="currentPage=1; updateUI()" class="w-full p-3 mb-4 border border-slate-200 rounded-xl text-base font-bold">
+                <option value="reception">Tiếp nhận / Khám tổng</option>
+                <option value="xray">Chụp X-Quang</option>
+                <option value="lab">Xét nghiệm</option>
+            </select>
+            <div class="flex gap-2">
+                <input type="text" id="barcode-input" class="min-w-0 flex-1 p-4 sm:p-6 text-center text-xl sm:text-3xl border-2 border-slate-200 rounded-2xl focus:border-emerald-500 outline-none bg-slate-50" placeholder="Quét hoặc nhập mã..." autocomplete="off" onkeydown="handleScanner(event)">
+                <button onclick="startCameraScanner()" class="px-4 sm:px-5 bg-emerald-600 text-white rounded-2xl font-bold" aria-label="Bật camera quét mã"><i class="fa-solid fa-camera text-xl"></i><span class="hidden sm:inline ml-2">Camera</span></button>
+            </div>
+            <p id="camera-hint" class="text-xs text-slate-500 mt-2 text-center" role="status">Nhấn Camera rồi chọn Cho phép khi Safari hỏi quyền truy cập camera.</p>
+            <div id="camera-container" class="hidden mt-4">
+                <video id="camera-video" class="w-full max-h-80 bg-black rounded-2xl" autoplay muted playsinline></video>
+                <button onclick="stopCameraScanner()" class="w-full mt-2 py-3 bg-slate-800 text-white rounded-xl font-bold">Tắt camera</button>
+            </div>
+            <div id="scanner-feedback" class="mt-5 font-bold text-xl min-h-[4rem] flex items-center justify-center rounded-2xl"></div>
+        </div>
+    </section>
+
+    <!-- Danh sách -->
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+        <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col gap-5 bg-slate-50/30">
+            <div>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight uppercase">Danh Sách Bệnh Nhân</h2>
+                <p id="station-list-hint" class="text-sm text-slate-500 mt-1"></p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 w-full">
+
+<select id="unit-filter" onchange="currentPage=1; updateUI()" class="w-full min-w-0 h-11 px-4 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600">
+    <option value="all">Tất cả đơn vị</option>
+</select>
+
+<div class="relative min-w-0">
+    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+    <input 
+        type="text" 
+        id="search-box" 
+        oninput="currentPage=1; updateUI()" 
+        placeholder="Tìm tên, ID, STT,..." 
+        class="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500">
+</div>
+
+                <select id="status-filter" onchange="updateUI()" class="w-full min-w-0 h-11 px-4 border border-slate-200 rounded-xl text-sm bg-white font-bold text-slate-600">
+                    <option value="all">Tất cả</option>
+                    <option value="pending">Chờ khám</option>
+                    <option value="done">Đã khám</option>
+                </select>
+
+<button onclick="openAddModal()" 
+    class="w-full h-11 px-4 bg-green-600 text-white text-sm rounded-xl hover:bg-green-700 shadow-md transition font-bold flex items-center justify-center gap-2">
+    <i class="fa-solid fa-user-plus"></i>
+    Thêm bệnh nhân
+</button>
+<button onclick="deleteAll()" 
+    class="w-full h-11 px-4 bg-red-500 text-white text-sm rounded-xl hover:bg-red-600 shadow-md transition font-bold flex items-center justify-center gap-2">
+    <i class="fa-solid fa-trash-can mr-1"></i> Xóa tất cả
+</button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+<table class="w-full text-sm">
+    <thead class="bg-slate-50 text-slate-500 uppercase font-black tracking-widest border-b border-slate-100">
+        <tr>
+            <!-- Cột Checkbox: Căn giữa -->
+            <th class="px-4 py-4 text-center w-12">
+                <input type="checkbox" class="scale-125" onclick="toggleSelectAll(this)">
+            </th>
+            
+            <!-- Cột STT: Căn giữa -->
+            <th onclick="handleSort('stt')" class="px-3 py-4 text-center cursor-pointer">
+                STT <span id="icon-stt"></span>
+            </th>
+            
+            <!-- Cột ID: Căn giữa -->
+            <th class="px-3 py-4 text-center">ID</th>
+            
+            <!-- Cột Họ và tên: Căn trái (vì là tên người) -->
+            <th onclick="handleSort('name')" class="px-3 py-4 text-left cursor-pointer">
+                Họ và tên <span id="icon-name"></span>
+            </th>
+            
+            <!-- Cột Giới tính: Căn giữa -->
+            <th onclick="handleSort('gender')" class="px-3 py-4 text-center cursor-pointer">
+                Giới tính <span id="icon-gender"></span>
+            </th>
+            
+            <!-- Cột Ngày sinh: Căn giữa -->
+            <th class="px-3 py-4 text-center">Ngày sinh</th>
+            
+            <!-- Cột Bộ phận: Căn giữa hoặc căn trái tùy ý (ở đây căn giữa cho gọn) -->
+            <th class="px-3 py-4 text-center">Bộ phận</th>
+            
+            <!-- Cột Đơn vị: Căn giữa -->
+            <th class="px-3 py-4 text-center">Đơn vị</th>
+            
+            <!-- Cột Trạng thái: Căn giữa -->
+            <th class="px-3 py-4 text-center">Trạng thái</th>
+
+            <th class="px-3 py-4 text-center">Dịch vụ</th>
+            
+            <!-- Cột Tùy chọn: Căn giữa -->
+            <th class="px-3 py-4 text-center">Tùy chọn</th>
+        </tr>
+    </thead>
+    <tbody id="patient-table-body" class="divide-y divide-slate-50">
+        <!-- Dữ liệu render từ JS nhớ áp dụng class căn chỉnh tương ứng (ví dụ: text-center cho STT, text-left cho Họ tên) -->
+    </tbody>
+</table>
+        </div>
+        <div id="empty-state" class="hidden p-20 text-center flex flex-col items-center">
+            <p class="text-slate-400 font-medium">Không tìm thấy dữ liệu.</p>
+        </div>
+
+<div class="flex items-center justify-between p-4 border-t">
+
+    <div class="text-sm text-slate-500">
+        <span id="pagination-info"></span>
+    </div>
+    <div class="flex items-center gap-2">
+
+        <button onclick="changePage(-1)" id="btn-prev"
+            class="px-3 py-1 border rounded-lg hover:bg-slate-100">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <span id="page-number" class="px-3 font-bold"></span>
+
+        <button onclick="changePage(1)" id="btn-next"
+            class="px-3 py-1 border rounded-lg hover:bg-slate-100">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <!-- chọn số dòng -->
+        <select onchange="changePageSize(this.value)"
+            class="ml-2 border px-2 py-1 rounded">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+        </select>
+
+    </div>
+
+</div>
+    </div>
+</div>
+
+<div id="toast" class="fixed bottom-8 right-8 px-8 py-4 bg-slate-900 text-white rounded-2xl shadow-2xl transform translate-y-32 transition-transform duration-500 pointer-events-none z-50 font-bold border border-slate-700"></div>
+
+<script>
+
+    let patients = [];
+    let editingId = null;
+    let isEditMode = false;
+    let editingCheckInSnapshot = null;
+    const STORAGE_KEY = "HEALTH_CHECK_SYSTEM_V3";
+    const CLOUD_CONFIG_KEY = "HEALTH_CHECK_SUPABASE_CONFIG_V1";
+    const CLOUD_SESSION_KEY = "HEALTH_CHECK_SUPABASE_SESSION_V1";
+    const CLOUD_QUEUE_KEY = "HEALTH_CHECK_SUPABASE_QUEUE_V1";
+    let sortField = localStorage.getItem('SORT_FIELD') || null;
+    let sortDirection = parseInt(localStorage.getItem('SORT_DIR')) || 1;
+    let scanBuffer = '';
+    let scanTimeout = null;
+    let selectedIds = new Set();
+    let currentPage = 1;
+    let pageSize = 10;
+    let cameraControls = null;
+    let cloudConfig = null;
+    let cloudSession = null;
+    let cloudSyncReady = false;
+    let cloudPollTimer = null;
+    let cloudSyncInProgress = false;
+    let cloudQueue = {};
+    let cloudMutationId = 0;
+
+    window.onload = () => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            patients = JSON.parse(saved);
+            patients = patients.map(patient => ({
+                ...patient,
+                requiresXray: parseImportBoolean(patient.requiresXray),
+                requiresLab: parseImportBoolean(patient.requiresLab),
+                checkIns: patient.checkIns && typeof patient.checkIns === 'object' ? patient.checkIns : {},
+                status: hasReceptionCheckIn(patient) ? 'done' : 'pending'
+            }));
+        }
+        const timelineStart = document.getElementById('timeline-start');
+        const today = new Date();
+        timelineStart.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        updateUnitDropdown();
+        updateUI();
+        setupFileImport();
+        initializeCloudSync();
+
+document.addEventListener('keydown', (e) => {
+    const scannerActive = !document.getElementById('section-scanner').classList.contains('hidden');
+    if (!scannerActive || e.target.id === 'barcode-input') return;
+
+    // Enter → xử lý
+    if (e.key === 'Enter') {
+        if (scanBuffer.length > 0) {
+            processScan(scanBuffer);
+            scanBuffer = '';
+        }
+        return;
+    }
+
+    // Bỏ qua phím đặc biệt
+    if (e.key.length > 1) return;
+
+    scanBuffer += e.key;
+
+    clearTimeout(scanTimeout);
+    scanTimeout = setTimeout(() => {
+        scanBuffer = '';
+    }, 100);
+});
+
+document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('edit-modal');
+
+    if (!modal.classList.contains('hidden') && e.key === 'Enter') {
+        e.preventDefault();
+        saveEdit();
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('edit-modal');
+
+    if (!modal.classList.contains('hidden') && e.key === 'Escape') {
+        closeEditModal();
+    }
+});
+
+const modal = document.getElementById('edit-modal');
+
+if (modal) {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeEditModal();
+        }
+    });
+}
+
+    };
+
+    function showSection(name) {
+        document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+        document.getElementById(`section-${name}`).classList.remove('hidden');
+        if (name === 'scanner') document.getElementById('barcode-input').focus();
+        else stopCameraScanner();
+    }
+
+function setupFileImport() {
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', event => {
+        handleFile(event.target.files[0]);
+        event.target.value = '';
+    });
+    dropZone.addEventListener('dragover', event => {
+        event.preventDefault();
+        dropZone.classList.add('active');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+    dropZone.addEventListener('drop', event => {
+        event.preventDefault();
+        dropZone.classList.remove('active');
+        handleFile(event.dataTransfer.files[0]);
+    });
+}
+
+function normalizeImportDate(value) {
+    const text = String(value || '').trim();
+    const parts = text.split(/[\/.-]/);
+    if (parts.length !== 3) return text;
+    if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+}
+
+function parseImportBoolean(value) {
+    return ['1', 'true', 'yes', 'y', 'co', 'có', 'x'].includes(String(value || '').trim().toLowerCase());
+}
+
+function processImportRows(rows) {
+    let newCount = 0;
+    let skippedCount = 0;
+    rows.forEach(row => {
+        if (!row || !String(row[2] || '').trim() || String(row[2]).trim().toLowerCase() === 'họ và tên') {
+            if (row && row.some(value => String(value || '').trim())) skippedCount++;
+            return;
+        }
+        const cols = row.map(value => String(value ?? '').trim());
+        const stt = cols[0] || '';
+        const codeid = cols[1] || '';
+        const name = cols[2];
+        const gender = cols[3] || '';
+        const dob = normalizeImportDate(cols[4]);
+        const cccd = cols[5] || '';
+        const department = cols[6] || '';
+        const unit = cols[7] || '';
+        const id = /^[a-zA-Z0-9_-]+$/.test(cols[8] || '') ? cols[8] : '';
+        const identity = cccd || codeid;
+
+        if (identity && patients.some(patient => (patient.cccd || patient.codeid) === identity)) {
+            skippedCount++;
+            return;
+        }
+
+        const patientId = id || `BN${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        if (patients.some(patient => patient.id === patientId)) {
+            skippedCount++;
+            return;
+        }
+        patients.push({
+            id: patientId,
+            stt, codeid, name, gender, dob, cccd, department, unit,
+            requiresXray: parseImportBoolean(cols[9]),
+            requiresLab: parseImportBoolean(cols[10]),
+            checkIns: {},
+            status: 'pending'
+        });
+        newCount++;
+    });
+
+    saveData();
+    updateUI();
+    showToast(`Đã thêm ${newCount}; bỏ qua ${skippedCount} dòng trùng hoặc thiếu dữ liệu.`);
+}
+
+function handleFile(file) {
+    if (!file) return;
+    if (!window.XLSX) {
+        showToast('Không tải được thư viện Excel. Hãy kiểm tra kết nối mạng.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => showToast('Không đọc được file Excel.');
+    reader.onload = event => {
+        try {
+            const workbook = XLSX.read(event.target.result, { type: 'array', cellDates: true });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            if (!sheet) {
+                showToast('File Excel không có trang tính để nhập.');
+                return;
+            }
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+            processImportRows(rows);
+        } catch (error) {
+            console.error('Lỗi đọc file Excel:', error);
+            showToast('File Excel không hợp lệ hoặc không thể đọc.');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function handleScanner(event) {
+    if (event.key === 'Enter') {
+        processScan(event.target.value.trim());
+        event.target.value = '';
+    }
+}
+
+function escapeHTML(value) {
+    return String(value || '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+}
+
+function hasReceptionCheckIn(patient) {
+    return Boolean(patient.checkIns?.reception || patient.checkInTime);
+}
+
+function syncReceptionStatus(patient) {
+    patient.status = hasReceptionCheckIn(patient) ? 'done' : 'pending';
+}
+
+function formatCheckInDisplay(timestamp) {
+    if (!timestamp) return 'Đã ghi nhận (dữ liệu cũ)';
+    const date = new Date(timestamp);
+    return Number.isNaN(date.getTime())
+        ? 'Đã ghi nhận (dữ liệu cũ)'
+        : `Đã ghi nhận lúc ${date.toLocaleString('vi-VN')}`;
+}
+
+function renderCheckInManagement(patient) {
+    const container = document.getElementById('checkin-management');
+    const stations = [
+        { key: 'reception', label: 'Khám tổng', complete: hasReceptionCheckIn(patient), timestamp: patient.checkIns?.reception },
+        { key: 'xray', label: 'Chụp X-Quang', complete: Boolean(patient.checkIns?.xray), timestamp: patient.checkIns?.xray },
+        { key: 'lab', label: 'Xét nghiệm', complete: Boolean(patient.checkIns?.lab), timestamp: patient.checkIns?.lab }
+    ];
+
+    container.innerHTML = stations.map(station => `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-slate-200 p-3">
+            <div>
+                <div class="text-sm font-bold text-slate-700">${station.label}</div>
+                <div class="text-xs ${station.complete ? 'text-emerald-600' : 'text-slate-400'}">${station.complete ? formatCheckInDisplay(station.timestamp) : 'Chưa ghi nhận'}</div>
+            </div>
+            <button type="button" onclick="undoCheckIn(${escapeHTML(JSON.stringify(patient.id))}, '${station.key}')"
+                ${station.complete ? '' : 'disabled'}
+                class="shrink-0 rounded-lg px-3 py-2 text-xs font-bold ${station.complete ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'cursor-not-allowed bg-slate-100 text-slate-400'}">
+                Hoàn tác
+            </button>
+        </div>
+    `).join('');
+    container.classList.remove('hidden');
+}
+
+function undoCheckIn(patientId, station) {
+    const stationLabels = { reception: 'Khám tổng', xray: 'Chụp X-Quang', lab: 'Xét nghiệm' };
+    if (!Object.prototype.hasOwnProperty.call(stationLabels, station)) return;
+    const patient = patients.find(item => item.id === patientId);
+    if (!patient) return;
+
+    if (station !== 'reception' && hasReceptionCheckIn(patient)) {
+        alert('Vui lòng hoàn tác lượt Khám tổng trước khi hoàn tác chỉ định dịch vụ.');
+        return;
+    }
+
+    const recorded = station === 'reception'
+        ? hasReceptionCheckIn(patient)
+        : Boolean(patient.checkIns?.[station]);
+    if (!recorded) return;
+    if (!confirm(`Đánh dấu hoàn tác lượt ${stationLabels[station]} của bệnh nhân ${patient.name}? Thay đổi chỉ được lưu khi nhấn Lưu; nhấn Hủy để khôi phục.`)) return;
+
+    patient.checkIns = patient.checkIns || {};
+    delete patient.checkIns[station];
+    if (station === 'reception') {
+        delete patient.checkInTime;
+        syncReceptionStatus(patient);
+    }
+
+    renderCheckInManagement(patient);
+}
+
+function processScan(code) {
+    if (!code) return;
+    const patient = patients.find(p => p.id === code);
+    const feedback = document.getElementById('scanner-feedback');
+    const station = document.getElementById('scan-station').value;
+    const stationLabels = { reception: 'Tiếp nhận / khám tổng', xray: 'Chụp X-Quang', lab: 'Xét nghiệm' };
+
+    if (!patient) {
+        feedback.innerHTML = `<div class="scanner-card scanner-error"><div class="scanner-icon"><i class="fa-solid fa-xmark text-2xl"></i></div><div><div class="scanner-title">KHÔNG TÌM THẤY</div><div class="scanner-name">Mã không hợp lệ</div><div class="scanner-sub">Mã: ${escapeHTML(code)}</div></div></div>`;
+        return;
+    }
+
+    if ((station === 'xray' && !patient.requiresXray) || (station === 'lab' && !patient.requiresLab)) {
+        const serviceName = station === 'xray' ? 'Chụp X-Quang' : 'Xét nghiệm';
+        feedback.innerHTML = `<div class="scanner-card scanner-error"><div class="scanner-icon"><i class="fa-solid fa-ban text-2xl"></i></div><div><div class="scanner-title">KHÔNG CÓ CHỈ ĐỊNH</div><div class="scanner-name">${escapeHTML(patient.name)}</div><div class="scanner-sub">Bệnh nhân không được chỉ định ${serviceName}.</div></div></div>`;
+        return;
+    }
+
+    patient.checkIns = patient.checkIns || {};
+    if (patient.checkIns[station]) {
+        if (station === 'reception' && patient.status !== 'done') {
+            syncReceptionStatus(patient);
+            patient.checkInTime = new Date(patient.checkIns.reception).toLocaleTimeString('vi-VN');
+            saveData();
+            updateUI();
+        }
+        feedback.innerHTML = `<div class="scanner-card scanner-error"><div class="scanner-icon"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div><div><div class="scanner-title">ĐÃ GHI NHẬN TRƯỚC ĐÓ</div><div class="scanner-name">${escapeHTML(patient.name)}</div><div class="scanner-sub">${stationLabels[station]}: ${new Date(patient.checkIns[station]).toLocaleTimeString('vi-VN')}</div></div></div>`;
+        return;
+    }
+
+    if (station === 'reception') {
+        const missingServices = [];
+        if (patient.requiresXray && !patient.checkIns.xray) missingServices.push('Chụp X-Quang');
+        if (patient.requiresLab && !patient.checkIns.lab) missingServices.push('Xét nghiệm');
+        if (missingServices.length > 0) {
+            feedback.innerHTML = `<div class="scanner-card scanner-error"><div class="scanner-icon"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div><div><div class="scanner-title">CHƯA ĐỦ CHỈ ĐỊNH</div><div class="scanner-name">${escapeHTML(patient.name)}</div><div class="scanner-sub">Còn thiếu: ${missingServices.map(escapeHTML).join(', ')}. Vui lòng hoàn tất trước khi quét Khám tổng.</div></div></div>`;
+            return;
+        }
+    }
+
+    patient.checkIns[station] = new Date().toISOString();
+    if (station === 'reception') {
+        syncReceptionStatus(patient);
+        patient.checkInTime = new Date(patient.checkIns[station]).toLocaleTimeString('vi-VN');
+    }
+    feedback.innerHTML = `<div class="scanner-card scanner-success"><div class="scanner-icon"><i class="fa-solid fa-check text-2xl"></i></div><div><div class="scanner-title">ĐÃ GHI NHẬN · ${stationLabels[station]}</div><div class="scanner-name">${escapeHTML(patient.name.toUpperCase())}</div><div class="scanner-sub">Giới tính: ${escapeHTML(patient.gender)} | ${formatDateVN(patient.dob)}</div></div></div>`;
+    saveData();
+    updateUI();
+}
+
+async function startCameraScanner() {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        showCameraError('Camera cần trang HTTPS. Hãy mở lại trang bằng địa chỉ HTTPS rồi thử lại.');
+        return;
+    }
+    if (!window.ZXingBrowser?.BrowserMultiFormatReader) {
+        showCameraError('Không tải được thư viện quét mã. Hãy kiểm tra kết nối mạng rồi tải lại trang.');
+        return;
+    }
+    stopCameraScanner();
+    document.getElementById('camera-container').classList.remove('hidden');
+    const reader = new ZXingBrowser.BrowserMultiFormatReader();
+    try {
+        const video = document.getElementById('camera-video');
+        cameraControls = await reader.decodeFromConstraints(
+            { video: { facingMode: { ideal: 'environment' } }, audio: false },
+            video,
+            (result, error) => {
+            if (!result) return;
+            processScan(result.getText());
+            stopCameraScanner();
+        });
+    } catch (error) {
+        stopCameraScanner();
+        console.error('Không thể mở camera:', error);
+        const errorName = error && typeof error === 'object' && 'name' in error ? error.name : '';
+        const messages = {
+            NotAllowedError: 'Safari đang chặn camera. Mở aA trên thanh địa chỉ → Cài đặt trang web → Camera → Cho phép, rồi tải lại trang.',
+            PermissionDeniedError: 'Safari đang chặn camera. Mở aA trên thanh địa chỉ → Cài đặt trang web → Camera → Cho phép, rồi tải lại trang.',
+            NotFoundError: 'Không tìm thấy camera trên thiết bị này.',
+            NotReadableError: 'Camera đang được ứng dụng khác sử dụng. Hãy đóng ứng dụng đó rồi thử lại.',
+            OverconstrainedError: 'Không mở được camera sau. Hãy thử chọn camera khác trong phần cài đặt thiết bị.',
+            SecurityError: 'Trình duyệt không cho phép dùng camera trên trang này. Hãy mở trang bằng HTTPS.'
+        };
+        showCameraError(messages[errorName] || 'Không thể khởi động camera. Kiểm tra quyền Camera của Safari và thử tải lại trang.');
+    }
+}
+
+function showCameraError(message) {
+    const hint = document.getElementById('camera-hint');
+    hint.textContent = message;
+    hint.classList.remove('text-slate-500');
+    hint.classList.add('text-red-600', 'font-semibold');
+    showToast(message);
+}
+
+function stopCameraScanner() {
+    if (cameraControls) {
+        cameraControls.stop();
+        cameraControls = null;
+    }
+    const cameraContainer = document.getElementById('camera-container');
+    if (cameraContainer) cameraContainer.classList.add('hidden');
+}
+
+    function deletePatient(id) {
+	if (!confirm("Chắc chắn xóa bệnh nhân?")) return;
+        patients = patients.filter(p => p.id !== id);
+        saveData(); updateUI();
+    }
+
+    function printAllBarcodes() {
+    if (patients.length === 0) return showToast("Danh sách trống!");
+
+    const printWindow = window.open('', '_blank', 'width=1920,height=1080');
+
+    let barcodeHtml = '';
+
+    patients.forEach(p => {
+        const safeId = p.id.replace(/\W/g, '');
+
+        barcodeHtml += `
+        <div class="barcode-card">
+            <div class="label">PKĐK CENTER LAB VIỆT NAM</div>
+            <div class="name">${p.name.toUpperCase()}</div>
+            <div class="info">Giới tính: ${p.gender} | ${formatDateVN(p.dob)}</div>
+            <svg id="p-bar-${safeId}"></svg>
+            <div class="id-text">${p.id}</div>
+        </div>
+        `;
+    });
+
+    const htmlContent = `
+    <html>
+    <head>
+        <title>In mã vạch</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 5mm;
+                font-family: Times New Roman, sans-serif;
+            }
+
+            .print-container {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr); /* 🔥 4 barcode / hàng */
+                gap: 0mm; /* 🔥 khoảng cách sát nhau */
+            }
+
+            .barcode-card {
+                border: 0.1mm dashed #ccc;
+                padding: 2mm;
+                height: 35mm; /* tối ưu để vừa A4 */
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                box-sizing: border-box;
+                page-break-inside: avoid;
+            }
+
+            .label {
+                font-size: 7px;
+                font-weight: bold;
+                color: #555;
+            }
+
+            .name {
+                font-size: 11px;
+                font-weight: 800;
+                margin: 2px 0;
+            }
+
+            .info {
+                font-size: 8px;
+                color: #444;
+                margin-bottom: 2px;
+            }
+
+            .id-text {
+                font-size: 9px;
+                font-family: monospace;
+                margin-top: 2px;
+            }
+
+            svg {
+                width: 100%;
+                height: 35px;
+            }
+
+            @media print {
+                @page {
+                    size: A4;
+                    margin: 5mm;
+                }
+            }
+        </style>
+
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+    </head>
+
+    <body>
+        <div class="print-container">
+            ${barcodeHtml}
+        </div>
+
+        <script>
+            window.onload = () => {
+                ${patients.map(p => {
+                    const safeId = p.id.replace(/\W/g, '');
+                    return `JsBarcode("#p-bar-${safeId}", "${p.id}", {
+                        format: "CODE128",
+                        width: 1.2,
+                        height: 35,
+                        displayValue: false,
+                        margin: 0
+                    });`;
+                }).join('\n')}
+
+                setTimeout(() => {
+                    window.print();
+                    window.close();
+                }, 500);
+            }
+        <\/script>
+    </body>
+    </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+}
+
+function setCloudStatus(message, isError = false) {
+    const status = document.getElementById('cloud-sync-status');
+    if (!status) return;
+    status.textContent = message;
+    status.className = `text-sm ${isError ? 'font-semibold text-red-600' : 'text-slate-600'}`;
+}
+
+function openCloudModal() {
+    const modal = document.getElementById('cloud-modal');
+    document.getElementById('cloud-project-url').value = cloudConfig?.url || '';
+    document.getElementById('cloud-anon-key').value = cloudConfig?.anonKey || '';
+    document.getElementById('cloud-email').value = cloudSession?.user?.email || '';
+    document.getElementById('cloud-password').value = '';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    updateCloudPanel();
+}
+
+function closeCloudModal() {
+    const modal = document.getElementById('cloud-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function updateCloudPanel() {
+    if (!cloudSession) {
+        setCloudStatus('Chưa đăng nhập Supabase.');
+        return;
+    }
+    const email = cloudSession.user?.email || 'tài khoản đã đăng nhập';
+    setCloudStatus(cloudSyncReady ? `Đang đồng bộ · ${email}` : `Đã đăng nhập · ${email}; chưa khởi tạo đồng bộ.`);
+}
+
+function parseCloudError(payload, fallback) {
+    if (payload && typeof payload === 'object') {
+        return payload.msg || payload.message || payload.error_description || payload.error || fallback;
+    }
+    return fallback;
+}
+
+async function cloudAuthRequest(path, body) {
+    const response = await fetch(`${cloudConfig.url}/auth/v1/${path}`, {
+        method: 'POST',
+        headers: { apikey: cloudConfig.anonKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(parseCloudError(payload, `Đăng nhập Supabase thất bại (${response.status}).`));
+    return payload;
+}
+
+async function refreshCloudSession() {
+    if (!cloudSession?.refresh_token) throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+    const response = await fetch(`${cloudConfig.url}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { apikey: cloudConfig.anonKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: cloudSession.refresh_token })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        cloudSession = null;
+        localStorage.removeItem(CLOUD_SESSION_KEY);
+        cloudSyncReady = false;
+        if (cloudPollTimer) clearInterval(cloudPollTimer);
+        cloudPollTimer = null;
+        throw new Error(parseCloudError(payload, `Không thể làm mới phiên đăng nhập (${response.status}).`));
+    }
+    cloudSession = payload;
+    localStorage.setItem(CLOUD_SESSION_KEY, JSON.stringify(cloudSession));
+}
+
+async function cloudRequest(path, options = {}) {
+    if (!cloudConfig || !cloudSession?.access_token) throw new Error('Chưa đăng nhập Supabase.');
+    if (cloudSession.expires_at && cloudSession.expires_at * 1000 < Date.now() + 60000) {
+        await refreshCloudSession();
+    }
+    const response = await fetch(`${cloudConfig.url}/rest/v1/${path}`, {
+        ...options,
+        headers: {
+            apikey: cloudConfig.anonKey,
+            Authorization: `Bearer ${cloudSession.access_token}`,
+            ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+            ...options.headers
+        }
+    });
+    const text = await response.text();
+    let payload = null;
+    if (text) {
+        try {
+            payload = JSON.parse(text);
+        } catch {
+            payload = text;
+        }
+    }
+    if (!response.ok) {
+        throw new Error(parseCloudError(payload, `Lỗi CSDL Supabase (${response.status}).`));
+    }
+    return payload;
+}
+
+const CLOUD_PROFILE_FIELDS = [
+    'id', 'stt', 'codeid', 'name', 'gender', 'dob', 'cccd',
+    'department', 'unit', 'requiresXray', 'requiresLab', 'checkInTime', 'status'
+];
+
+function patientForCloud(patient, previousPatient = null, fieldsToUpload = CLOUD_PROFILE_FIELDS) {
+    const checkIns = {};
+    const stations = ['reception', 'xray', 'lab'];
+    stations.forEach(station => {
+        const currentTimestamp = patient.checkIns?.[station];
+        const previousTimestamp = previousPatient?.checkIns?.[station];
+        if (!previousPatient || currentTimestamp !== previousTimestamp) {
+            checkIns[station] = currentTimestamp || null;
+        }
+    });
+    if (!previousPatient && hasReceptionCheckIn(patient) && !patient.checkIns?.reception) {
+        checkIns.reception = 'recorded-no-date';
+    }
+
+    const cloudPatient = {};
+    fieldsToUpload.forEach(field => {
+        if (field === 'requiresXray' || field === 'requiresLab') {
+            cloudPatient[field] = Boolean(patient[field]);
+        } else if (field === 'id') {
+            cloudPatient[field] = patient.id;
+        } else if (patient[field] !== undefined) {
+            cloudPatient[field] = patient[field];
+        }
+    });
+    cloudPatient.checkIns = checkIns;
+    return cloudPatient;
+}
+
+function patientFromCloud(cloudPatient, localPatient) {
+    const patient = {
+        ...(localPatient || {}),
+        ...cloudPatient,
+    };
+    CLOUD_PROFILE_FIELDS.forEach(field => {
+        if (patient[field] === undefined && localPatient?.[field] !== undefined) {
+            patient[field] = localPatient[field];
+        }
+    });
+    patient.requiresXray = parseImportBoolean(patient.requiresXray);
+    patient.requiresLab = parseImportBoolean(patient.requiresLab);
+    const checkIns = patient.checkIns && typeof patient.checkIns === 'object' ? patient.checkIns : {};
+    patient.checkIns = Object.fromEntries(Object.entries(checkIns).filter(([, timestamp]) => Boolean(timestamp)));
+    syncReceptionStatus(patient);
+    return patient;
+}
+
+async function writeCloudPatients(records) {
+    for (let index = 0; index < records.length; index += 25) {
+        const batch = records.slice(index, index + 25);
+        await Promise.all(batch.map(({ patient, previousPatient = null, fieldsToUpload = CLOUD_PROFILE_FIELDS }) =>
+            cloudRequest('rpc/merge_health_patient', {
+                method: 'POST',
+                body: JSON.stringify({
+                    p_id: patient.id,
+                    p_patient_data: patientForCloud(patient, previousPatient, fieldsToUpload)
+                })
+            })
+        ));
+    }
+}
+
+async function fetchCloudPatients() {
+    const records = [];
+    let offset = 0;
+    const pageSize = 1000;
+    while (true) {
+        const page = await cloudRequest(`health_patients?select=id,patient_data&order=id.asc&limit=${pageSize}&offset=${offset}`);
+        if (!Array.isArray(page)) throw new Error('Dữ liệu Supabase trả về không đúng định dạng.');
+        records.push(...page);
+        if (page.length < pageSize) return records;
+        offset += pageSize;
+    }
+}
+
+async function connectCloud() {
+    if (!cloudSession) throw new Error('Vui lòng đăng nhập trước.');
+    if (cloudSyncReady) await flushCloudQueue();
+    let remoteRows = await fetchCloudPatients();
+    const localById = new Map(patients.map(patient => [patient.id, patient]));
+
+    if (remoteRows.length === 0 && patients.length > 0) {
+        if (!confirm(`CSDL Supabase đang trống. Tải toàn bộ thông tin của ${patients.length} bệnh nhân trên thiết bị này lên làm dữ liệu chung, bao gồm CCCD, ngày sinh và giới tính?`)) {
+            cloudSyncReady = false;
+            setCloudStatus('Chưa khởi tạo đồng bộ. Dữ liệu trên thiết bị vẫn được giữ nguyên.');
+            return;
+        }
+        await writeCloudPatients(patients.map(patient => ({ patient })));
+        remoteRows = await fetchCloudPatients();
+    } else if (remoteRows.length > 0 && patients.length > 0) {
+        const remoteById = new Map(remoteRows.map(row => [row.id, row.patient_data]));
+        const remoteIds = new Set(remoteRows.map(row => row.id));
+        const localOnly = patients.filter(patient =>
+            !remoteIds.has(patient.id) && cloudQueue[patient.id]?.type !== 'delete'
+        );
+        if (localOnly.length > 0) {
+            if (!confirm(`Có ${localOnly.length} bệnh nhân chỉ có trên thiết bị này. Tải các mã này lên CSDL chung? Dữ liệu trên Supabase sẽ được ưu tiên nếu trùng mã.`)) {
+                cloudSyncReady = false;
+                setCloudStatus('Đồng bộ chưa bắt đầu. Hãy sao lưu hoặc xử lý dữ liệu riêng trên thiết bị này trước.');
+                return;
+            }
+            await writeCloudPatients(localOnly.map(patient => ({ patient })));
+            remoteRows = await fetchCloudPatients();
+        }
+        const backfillRecords = patients.flatMap(patient => {
+            const remotePatient = remoteById.get(patient.id);
+            if (!remotePatient) return [];
+            const fieldsToUpload = CLOUD_PROFILE_FIELDS.filter(field =>
+                (remotePatient[field] === undefined ||
+                    remotePatient[field] === null ||
+                    remotePatient[field] === '') &&
+                patient[field] !== undefined &&
+                patient[field] !== null &&
+                patient[field] !== ''
+            );
+            return fieldsToUpload.length > 0
+                ? [{ patient, previousPatient: patient, fieldsToUpload }]
+                : [];
+        });
+        if (backfillRecords.length > 0) {
+            if (!confirm(`Supabase đã có dữ liệu cũ. Tải bổ sung các trường thông tin còn thiếu từ máy này cho ${backfillRecords.length} bệnh nhân (có thể gồm CCCD, ngày sinh và giới tính)? Dữ liệu đã có trên Supabase sẽ không bị thay thế.`)) {
+                cloudSyncReady = false;
+                setCloudStatus('Chưa bổ sung dữ liệu cá nhân còn thiếu. Các trường cũ vẫn chỉ có trên thiết bị này.');
+                return;
+            }
+            await writeCloudPatients(backfillRecords);
+            remoteRows = await fetchCloudPatients();
+        }
+    }
+
+    const merged = remoteRows.map(row => {
+        const remotePatient = row.patient_data;
+        if (!remotePatient || remotePatient.id !== row.id) {
+            throw new Error(`Bản ghi Supabase không hợp lệ (mã ${row.id}).`);
+        }
+        return patientFromCloud(remotePatient, localById.get(row.id));
+    });
+    patients = merged;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
+    cloudSyncReady = true;
+    updateUnitDropdown();
+    updateUI();
+    updateCloudPanel();
+    if (cloudPollTimer) clearInterval(cloudPollTimer);
+    cloudPollTimer = setInterval(async () => {
+        await flushCloudQueue();
+        await pollCloudChanges();
+    }, 7000);
+    setCloudStatus(`Đã đồng bộ ${patients.length} bệnh nhân · ${cloudSession.user?.email || ''}`);
+}
+
+async function pollCloudChanges() {
+    if (!cloudSyncReady || !cloudSession || cloudSyncInProgress) return;
+    try {
+        const rows = await fetchCloudPatients();
+        const queuedIds = new Set(Object.keys(cloudQueue));
+        const localById = new Map(patients.map(patient => [patient.id, patient]));
+        const remoteIds = new Set(rows.map(row => row.id));
+        const nextPatients = patients.filter(patient => remoteIds.has(patient.id) || queuedIds.has(patient.id));
+        rows.forEach(row => {
+            if (queuedIds.has(row.id)) return;
+            if (!row.patient_data || row.patient_data.id !== row.id) {
+                throw new Error(`Bản ghi Supabase không hợp lệ (mã ${row.id}).`);
+            }
+            const patient = patientFromCloud(row.patient_data, localById.get(row.id));
+            const index = nextPatients.findIndex(item => item.id === row.id);
+            if (index === -1) nextPatients.push(patient);
+            else nextPatients[index] = patient;
+        });
+        if (JSON.stringify(nextPatients) !== JSON.stringify(patients)) {
+            patients = nextPatients;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
+            updateUnitDropdown();
+            updateUI();
+        }
+        setCloudStatus(`Đang đồng bộ · ${cloudSession.user?.email || ''} · ${new Date().toLocaleTimeString('vi-VN')}`);
+    } catch (error) {
+        console.error('Lỗi đồng bộ Supabase:', error);
+        setCloudStatus(`Lỗi đồng bộ: ${error.message}`, true);
+    }
+}
+
+async function flushCloudQueue() {
+    if (!cloudSyncReady || cloudSyncInProgress || !cloudSession) return;
+    cloudSyncInProgress = true;
+    try {
+        const operations = Object.entries(cloudQueue);
+        for (const [id, operation] of operations) {
+            if (operation.type === 'upsert') {
+                await writeCloudPatients([{
+                    patient: operation.patient,
+                    previousPatient: operation.previousPatient
+                }]);
+            } else {
+                await cloudRequest(`health_patients?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+            }
+            if (cloudQueue[id]?.mutationId === operation.mutationId) delete cloudQueue[id];
+        }
+        localStorage.setItem(CLOUD_QUEUE_KEY, JSON.stringify(cloudQueue));
+        if (operations.length > 0) {
+            setCloudStatus(`Đã tải ${operations.length} thay đổi lên Supabase.`);
+        }
+    } catch (error) {
+        console.error('Không thể ghi dữ liệu lên Supabase:', error);
+        setCloudStatus(`Chưa đồng bộ được thay đổi: ${error.message}`, true);
+    } finally {
+        cloudSyncInProgress = false;
+    }
+}
+
+function queueCloudChanges(previousPatients, currentPatients) {
+    if (!cloudSyncReady) return;
+    const previousById = new Map(previousPatients.map(patient => [patient.id, patient]));
+    const currentById = new Map(currentPatients.map(patient => [patient.id, patient]));
+    previousById.forEach((previous, id) => {
+        if (!currentById.has(id)) {
+            cloudQueue[id] = { type: 'delete', mutationId: ++cloudMutationId };
+        }
+    });
+    currentById.forEach((current, id) => {
+        if (JSON.stringify(previousById.get(id)) !== JSON.stringify(current)) {
+            const queuedOperation = cloudQueue[id];
+            cloudQueue[id] = {
+                type: 'upsert',
+                patient: JSON.parse(JSON.stringify(current)),
+                previousPatient: queuedOperation?.type === 'upsert'
+                    ? queuedOperation.previousPatient
+                    : (previousById.has(id) ? JSON.parse(JSON.stringify(previousById.get(id))) : null),
+                mutationId: ++cloudMutationId
+            };
+        }
+    });
+    localStorage.setItem(CLOUD_QUEUE_KEY, JSON.stringify(cloudQueue));
+    void flushCloudQueue();
+}
+
+function saveData() {
+    let previousPatients = [];
+    const previous = localStorage.getItem(STORAGE_KEY);
+    if (previous) {
+        try {
+            const parsed = JSON.parse(previous);
+            if (Array.isArray(parsed)) previousPatients = parsed;
+        } catch (error) {
+            console.error('Không thể đọc dữ liệu cũ để lập hàng đợi đồng bộ:', error);
+            setCloudStatus('Không thể so sánh dữ liệu cũ; hãy sao lưu trước khi tiếp tục đồng bộ.', true);
+        }
+    }
+    patients.forEach(syncReceptionStatus);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
+    updateUnitDropdown();
+    queueCloudChanges(previousPatients, patients);
+}
+
+async function signInToCloud(event) {
+    event?.preventDefault();
+    const url = document.getElementById('cloud-project-url').value.trim().replace(/\/+$/, '');
+    const anonKey = document.getElementById('cloud-anon-key').value.trim();
+    const email = document.getElementById('cloud-email').value.trim();
+    const password = document.getElementById('cloud-password').value;
+    try {
+        const parsedUrl = new URL(url);
+        if (parsedUrl.protocol !== 'https:' || !anonKey || !email || !password) {
+            throw new Error('Nhập Project URL HTTPS, anon/public key, email và mật khẩu.');
+        }
+        cloudSyncReady = false;
+        if (cloudPollTimer) clearInterval(cloudPollTimer);
+        cloudPollTimer = null;
+        cloudSession = null;
+        localStorage.removeItem(CLOUD_SESSION_KEY);
+        cloudConfig = { url, anonKey };
+        localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
+        setCloudStatus('Đang đăng nhập...');
+        cloudSession = await cloudAuthRequest('token?grant_type=password', { email, password });
+        localStorage.setItem(CLOUD_SESSION_KEY, JSON.stringify(cloudSession));
+        cloudQueue = JSON.parse(localStorage.getItem(CLOUD_QUEUE_KEY) || '{}');
+        cloudMutationId = Math.max(0, ...Object.values(cloudQueue).map(operation => Number(operation.mutationId) || 0));
+        await connectCloud();
+        await flushCloudQueue();
+    } catch (error) {
+        console.error('Đăng nhập/khởi tạo Supabase thất bại:', error);
+        setCloudStatus(error.message, true);
+    }
+}
+
+async function initializeCloudSync() {
+    try {
+        cloudConfig = JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY) || 'null');
+        cloudSession = JSON.parse(localStorage.getItem(CLOUD_SESSION_KEY) || 'null');
+        cloudQueue = JSON.parse(localStorage.getItem(CLOUD_QUEUE_KEY) || '{}');
+        cloudMutationId = Math.max(0, ...Object.values(cloudQueue).map(operation => Number(operation.mutationId) || 0));
+        if (cloudConfig && cloudSession) {
+            await connectCloud();
+            await flushCloudQueue();
+        } else {
+            updateCloudPanel();
+        }
+    } catch (error) {
+        console.error('Không thể khởi tạo đồng bộ Supabase:', error);
+        cloudSyncReady = false;
+        setCloudStatus(`Không thể kết nối Supabase: ${error.message}`, true);
+    }
+}
+
+async function logoutFromCloud() {
+    if (cloudSession?.access_token && cloudConfig) {
+        try {
+            await fetch(`${cloudConfig.url}/auth/v1/logout`, {
+                method: 'POST',
+                headers: { apikey: cloudConfig.anonKey, Authorization: `Bearer ${cloudSession.access_token}` }
+            });
+        } catch (error) {
+            console.error('Không thể kết thúc phiên Supabase ở máy chủ:', error);
+        }
+    }
+    cloudSession = null;
+    cloudSyncReady = false;
+    if (cloudPollTimer) clearInterval(cloudPollTimer);
+    cloudPollTimer = null;
+    localStorage.removeItem(CLOUD_SESSION_KEY);
+    updateCloudPanel();
+}
+
+async function syncCloudNow() {
+    try {
+        await connectCloud();
+        await flushCloudQueue();
+    } catch (error) {
+        console.error('Không thể đồng bộ Supabase:', error);
+        setCloudStatus(`Không thể đồng bộ: ${error.message}`, true);
+        showToast(`Lỗi đồng bộ: ${error.message}`);
+    }
+}
+
+async function copySupabaseText(textareaId, successMessage) {
+    const textarea = document.getElementById(textareaId);
+    try {
+        await navigator.clipboard.writeText(textarea.value);
+        showToast(successMessage);
+    } catch (error) {
+        console.error('Không thể sao chép SQL:', error);
+        textarea.focus();
+        textarea.select();
+        showToast('Không tự sao chép được. Hãy chọn và sao chép đoạn SQL bên dưới.');
+    }
+}
+
+function copySupabaseSql() {
+    return copySupabaseText('supabase-setup-sql', 'Đã sao chép SQL tạo bảng và chính sách.');
+}
+
+function copySupabaseUsersSql() {
+    return copySupabaseText('supabase-users-sql', 'Đã sao chép SQL cấp quyền email.');
+}
+
+function copySupabaseRpcSql() {
+    return copySupabaseText('supabase-rpc-sql', 'Đã sao chép SQL RPC.');
+}
+
+function localDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function renderTimeline() {
+    const startValue = document.getElementById('timeline-start').value;
+    if (!startValue) return;
+    const [year, month, day] = startValue.split('-').map(Number);
+    const startDate = new Date(year, month - 1, day);
+    const unitFilter = document.getElementById('unit-filter').value;
+    const scopedPatients = patients.filter(patient => unitFilter === 'all' || patient.unit === unitFilter);
+    const timeline = document.getElementById('timeline-list');
+
+    timeline.innerHTML = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + index);
+        const key = localDateKey(date);
+        const dayLabel = date.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' });
+        const counts = { reception: 0, xray: 0, lab: 0 };
+        scopedPatients.forEach(patient => {
+            Object.entries(patient.checkIns || {}).forEach(([station, timestamp]) => {
+                if (counts[station] === undefined || !timestamp) return;
+                const checkInDate = new Date(timestamp);
+                if (!Number.isNaN(checkInDate.getTime()) && localDateKey(checkInDate) === key) counts[station]++;
+            });
+        });
+        const maximum = Math.max(1, ...Object.values(counts));
+        return `<article class="rounded-xl border border-slate-200 p-3">
+            <h3 class="font-bold text-slate-700 mb-2">${dayLabel}</h3>
+            <div class="space-y-2 text-xs">
+                <div><div class="flex justify-between"><span>Khám tổng</span><strong>${counts.reception}</strong></div><div class="h-1.5 bg-slate-100 rounded-full"><div class="h-full bg-emerald-500 rounded-full" style="width:${counts.reception / maximum * 100}%"></div></div></div>
+                <div><div class="flex justify-between"><span>X-Quang</span><strong>${counts.xray}</strong></div><div class="h-1.5 bg-slate-100 rounded-full"><div class="h-full bg-sky-500 rounded-full" style="width:${counts.xray / maximum * 100}%"></div></div></div>
+                <div><div class="flex justify-between"><span>Xét nghiệm</span><strong>${counts.lab}</strong></div><div class="h-1.5 bg-slate-100 rounded-full"><div class="h-full bg-violet-500 rounded-full" style="width:${counts.lab / maximum * 100}%"></div></div></div>
+            </div>
+        </article>`;
+    }).join('');
+}
+
+function updateUI() {
+    const tbody = document.getElementById('patient-table-body');
+    const filter = document.getElementById('status-filter').value;
+    const search = document.getElementById('search-box').value.toLowerCase();
+    const scanStation = document.getElementById('scan-station').value;
+    const stationHint = document.getElementById('station-list-hint');
+    const stationLabels = {
+        reception: 'Khám tổng · hiển thị tất cả bệnh nhân',
+        xray: 'Chụp X-Quang · chỉ hiển thị bệnh nhân được chỉ định X-Quang',
+        lab: 'Xét nghiệm · chỉ hiển thị bệnh nhân được chỉ định xét nghiệm'
+    };
+    stationHint.textContent = stationLabels[scanStation];
+
+    tbody.innerHTML = '';
+
+    // 1. FILTER
+const unitFilter = document.getElementById('unit-filter').value; // Lấy filter đơn vị
+
+    let filtered = patients.filter(p => {
+        const isDone = hasReceptionCheckIn(p);
+        const matchStatus = filter === 'all' || (filter === 'done' ? isDone : !isDone);
+        const matchUnit = unitFilter === 'all' || p.unit === unitFilter; // So sánh đơn vị
+        const matchStation = scanStation === 'reception' ||
+            (scanStation === 'xray' ? p.requiresXray : p.requiresLab);
+        const matchSearch =
+         (p.name || '').toLowerCase().includes(search) ||
+        (p.codeid && p.codeid.toLowerCase().includes(search)) ||
+        (p.stt && p.stt.toString().toLowerCase().includes(search));
+        return matchStatus && matchUnit && matchStation && matchSearch; // Kết hợp điều kiện
+    });
+
+    // 2. SORT (nếu có)
+    if (typeof sortPatients === "function") {
+        filtered = sortPatients(filtered);
+    }
+
+    // 3. PAGINATION
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / pageSize) || 1;
+
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+
+    const paginated = filtered.slice(start, end);
+
+    // 4. RENDER TABLE
+    paginated.forEach(p => {
+        const safeId = p.id.replace(/\W/g, '');
+
+        const tr = document.createElement('tr');
+
+        // highlight trạng thái
+        if (hasReceptionCheckIn(p)) {
+            tr.classList.add("bg-emerald-50/30");
+        }
+
+        // highlight chọn
+        if (typeof selectedIds !== "undefined" && selectedIds.has(p.id)) {
+            tr.classList.add("bg-red-50");
+        }
+
+        tr.innerHTML = `
+<td class="px-4 py-4 text-center">
+    <input type="checkbox"
+        class="scale-125"
+        ${selectedIds && selectedIds.has(p.id) ? 'checked' : ''}
+        onchange="toggleSelect(${escapeHTML(JSON.stringify(p.id))}, this.checked)">
+</td>
+
+<td class="px-3 py-4 text-center">${escapeHTML(p.stt)}</td>
+<td class="px-3 py-4 text-center">${escapeHTML(p.codeid)}</td>
+<td class="px-3 py-4 text-left font-bold text-slate-800">${escapeHTML(p.name)}</td>
+<td class="px-3 py-4 text-center">${escapeHTML(p.gender)}</td>
+<td class="px-3 py-4 text-center">${escapeHTML(formatDateVN(p.dob))}</td>
+<td class="px-3 py-4 text-center">${escapeHTML(p.department)}</td>
+<td class="px-3 py-4 text-center">${escapeHTML(p.unit)}</td>
+
+<td class="px-3 py-4 text-center">
+    ${
+        hasReceptionCheckIn(p)
+        ? `<span class="inline-flex items-center gap-1 px-3 py-1 text-sm font-bold rounded-full bg-emerald-100 text-emerald-700">
+                <i class="fa-solid fa-check"></i> Đã khám
+           </span>`
+        : `<span class="inline-flex items-center gap-1 px-3 py-1 text-sm font-bold rounded-full bg-orange-100 text-orange-700">
+                <i class="fa-solid fa-clock"></i> Đang chờ khám
+           </span>`
+    }
+</td>
+
+<td class="px-3 py-4 text-center whitespace-nowrap">
+    <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-full ${p.requiresXray ? (p.checkIns?.xray ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500') : 'bg-slate-50 text-slate-400'}">
+        <i class="fa-solid fa-x-ray"></i> XQ ${p.requiresXray ? (p.checkIns?.xray ? '✓' : '•') : '—'}
+    </span>
+    <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-full ${p.requiresLab ? (p.checkIns?.lab ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-500') : 'bg-slate-50 text-slate-400'}">
+        <i class="fa-solid fa-flask"></i> XN ${p.requiresLab ? (p.checkIns?.lab ? '✓' : '•') : '—'}
+    </span>
+</td>
+
+<td class="px-4 py-4 text-center space-x-2">
+    <button onclick="openEditModal(${escapeHTML(JSON.stringify(p.id))})"
+        class="text-blue-500 hover:text-blue-700 font-medium">
+        <i class="fa-solid fa-pen"></i> Sửa
+    </button>
+
+    <button onclick="deletePatient(${escapeHTML(JSON.stringify(p.id))})"
+        class="text-red-500 hover:text-red-700 font-medium">
+        <i class="fa-solid fa-trash"></i> Xóa
+    </button>
+</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+
+    // 5. STATS
+const statsData = patients.filter(patient => {
+    const matchesUnit = unitFilter === 'all' || patient.unit === unitFilter;
+    const matchesStation = scanStation === 'reception' ||
+        (scanStation === 'xray' ? patient.requiresXray : patient.requiresLab);
+    return matchesUnit && matchesStation;
+});
+
+document.getElementById('stat-total').innerText = statsData.length;
+document.getElementById('stat-done').innerText = statsData.filter(hasReceptionCheckIn).length;
+document.getElementById('stat-pending').innerText = statsData.filter(p => !hasReceptionCheckIn(p)).length;
+document.getElementById('stat-xray').innerText = statsData.filter(p => p.checkIns?.xray).length;
+document.getElementById('stat-xray-total').innerText = ` / ${statsData.filter(p => p.requiresXray).length}`;
+document.getElementById('stat-lab').innerText = statsData.filter(p => p.checkIns?.lab).length;
+document.getElementById('stat-lab-total').innerText = ` / ${statsData.filter(p => p.requiresLab).length}`;
+
+// Kiểm tra xem biến filtered có tồn tại không để tránh lỗi văng code
+if (typeof filtered !== 'undefined') {
+    document.getElementById('empty-state').classList.toggle('hidden', filtered.length > 0);
+}
+
+const totalPatients = statsData.length;
+const progressTitle = document.getElementById('progress-title');
+const stationProgressLabels = { reception: 'TIẾN ĐỘ KHÁM TỔNG', xray: 'TIẾN ĐỘ CHỤP X-QUANG', lab: 'TIẾN ĐỘ XÉT NGHIỆM' };
+progressTitle.innerText = stationProgressLabels[scanStation];
+const completedPatients = statsData.filter(patient =>
+    scanStation === 'reception' ? hasReceptionCheckIn(patient) : Boolean(patient.checkIns?.[scanStation])
+).length;
+const percent = totalPatients === 0 ? 0 : Math.round(completedPatients / totalPatients * 100);
+
+// Cập nhật chữ phần trăm
+document.getElementById('progress-text').innerText = `${percent}%`;
+
+const progressBar = document.getElementById('progress-bar');
+progressBar.style.width = `${percent}%`;
+
+// --- LOGIC ĐỔI MÀU THANH TIẾN ĐỘ ---
+// Xóa các class màu cũ đi trước khi thêm màu mới
+progressBar.className = "h-full rounded-full transition-all duration-500";
+
+if (percent === 100) {
+    progressBar.classList.add('bg-emerald-500'); // 100%: Xanh lá hoàn thành
+} else if (percent >= 50) {
+    progressBar.classList.add('bg-blue-600');    // Từ 50% - 99%: Xanh dương
+} else if (percent > 0) {
+    progressBar.classList.add('bg-orange-500');  // Dưới 50%: Màu cam
+} else {
+    progressBar.classList.add('bg-slate-300');   // 0%: Xám
+}
+
+    // 6. PAGINATION UI (SAFE)
+    const pageNumber = document.getElementById('page-number');
+    const pageInfo = document.getElementById('pagination-info');
+
+    if (pageNumber) {
+        pageNumber.innerText = `${currentPage} / ${totalPages}`;
+    }
+
+    if (pageInfo) {
+        pageInfo.innerText =
+            `Hiển thị ${total === 0 ? 0 : start + 1}-${Math.min(end, total)} / ${total}`;
+    }
+
+    const prevBtn = document.getElementById('btn-prev');
+    const nextBtn = document.getElementById('btn-next');
+
+    if (prevBtn) prevBtn.disabled = currentPage === 1;
+    if (nextBtn) nextBtn.disabled = currentPage === totalPages;
+
+
+const bulkBar = document.getElementById('bulk-bar');
+const countText = document.getElementById('selected-count');
+
+if (selectedIds.size > 0) {
+    bulkBar.classList.remove('hidden');
+    countText.innerText = `Đã chọn ${selectedIds.size} bệnh nhân`;
+} else {
+    bulkBar.classList.add('hidden');
+}
+
+renderTimeline();
+}
+
+
+
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.classList.remove('translate-y-32');
+        setTimeout(() => toast.classList.add('translate-y-32'), 3000);
+    }
+
+function sortPatients(list) {
+    return [...list].sort((a, b) => {
+
+        // ✅ ƯU TIÊN "ĐÃ KHÁM" LÊN TRƯỚC
+        const aDone = hasReceptionCheckIn(a);
+        const bDone = hasReceptionCheckIn(b);
+        if (aDone !== bDone) {
+            if (aDone) return -1;
+            if (bDone) return 1;
+        }
+
+        // nếu không có sort field
+        if (!sortField) return 0;
+
+        let valA = a[sortField] || '';
+        let valB = b[sortField] || '';
+
+        // số
+        if (!isNaN(valA) && !isNaN(valB)) {
+            return (valA - valB) * sortDirection;
+        }
+
+        // text
+        return valA.toString().localeCompare(valB.toString(), 'vi') * sortDirection;
+    });
+}
+
+function handleSort(field) {
+    if (sortField === field) {
+        sortDirection *= -1;
+    } else {
+        sortField = field;
+        sortDirection = 1;
+    }
+
+    // 💾 LƯU LẠI
+    localStorage.setItem('SORT_FIELD', sortField);
+    localStorage.setItem('SORT_DIR', sortDirection);
+
+    updateUI();
+}
+
+function getSortIcon(field) {
+    if (sortField !== field) {
+        return `<i class="fa-solid fa-sort text-xs ml-1 opacity-30"></i>`;
+    }
+
+    return sortDirection === 1
+        ? `<i class="fa-solid fa-sort-up text-xs ml-1"></i>`
+        : `<i class="fa-solid fa-sort-down text-xs ml-1"></i>`;
+}
+
+function toggleSelect(id, checked) {
+    if (checked) {
+        selectedIds.add(id);
+    } else {
+        selectedIds.delete(id);
+    }
+
+    updateUI(); // 👈 BẮT BUỘC PHẢI CÓ
+}
+
+function toggleSelectAll(el) {
+    if (el.checked) {
+        patients.forEach(p => selectedIds.add(p.id));
+    } else {
+        selectedIds.clear();
+    }
+    updateUI();
+}
+
+function deleteSelected() {
+    if (selectedIds.size === 0) {
+        showToast("Chưa chọn bệnh nhân!");
+        return;
+    }
+
+    if (!confirm("Xóa các bệnh nhân đã chọn?")) return;
+
+    patients = patients.filter(p => !selectedIds.has(p.id));
+    selectedIds.clear();
+
+    saveData();
+    updateUI();
+}
+
+function deleteAll() {
+    if (patients.length === 0) return;
+
+    if (!confirm("Xóa toàn bộ danh sách?")) return;
+
+    patients = [];
+    selectedIds.clear();
+
+    saveData();
+    updateUI();
+}
+
+function exportExcel() {
+    if (!window.XLSX) {
+        showToast('Không tải được thư viện Excel. Hãy kiểm tra kết nối mạng.');
+        return;
+    }
+    if (patients.length === 0) {
+        showToast('Không có dữ liệu để xuất!');
+        return;
+    }
+
+    const statusFilter = document.getElementById('status-filter').value;
+    const unitFilter = document.getElementById('unit-filter').value;
+    const scanStation = document.getElementById('scan-station').value;
+    const search = document.getElementById('search-box').value.trim().toLocaleLowerCase('vi');
+    const filteredPatients = sortPatients(patients.filter(patient => {
+        const isDone = hasReceptionCheckIn(patient);
+        const matchesStatus = statusFilter === 'all' || (statusFilter === 'done' ? isDone : !isDone);
+        const matchesUnit = unitFilter === 'all' || patient.unit === unitFilter;
+        const matchesStation = scanStation === 'reception' ||
+            (scanStation === 'xray' ? patient.requiresXray : patient.requiresLab);
+        const searchable = [patient.name, patient.codeid, patient.stt, patient.cccd]
+            .map(value => String(value || '').toLocaleLowerCase('vi'));
+        const matchesSearch = !search || searchable.some(value => value.includes(search));
+        return matchesStatus && matchesUnit && matchesStation && matchesSearch;
+    }));
+
+    const rows = filteredPatients.map(patient => ({
+        'STT': patient.stt || '',
+        'Mã nhân viên': patient.codeid || '',
+        'Họ và tên': patient.name || '',
+        'Giới tính': patient.gender || '',
+        'Ngày sinh': formatDateVN(patient.dob),
+        'Số CCCD': patient.cccd || '',
+        'Bộ phận': patient.department || '',
+        'Đơn vị': patient.unit || '',
+        'Barcode': patient.id,
+        'Chụp X-Quang': patient.requiresXray ? 'Có' : 'Không',
+        'Thời gian X-Quang': patient.checkIns?.xray ? new Date(patient.checkIns.xray).toLocaleString('vi-VN') : '',
+        'Xét nghiệm': patient.requiresLab ? 'Có' : 'Không',
+        'Thời gian xét nghiệm': patient.checkIns?.lab ? new Date(patient.checkIns.lab).toLocaleString('vi-VN') : '',
+        'Trạng thái khám tổng': hasReceptionCheckIn(patient) ? 'Đã khám' : 'Đang chờ khám',
+        'Thời gian khám tổng': patient.checkIns?.reception ? new Date(patient.checkIns.reception).toLocaleString('vi-VN') : ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'DanhSach');
+    XLSX.writeFile(workbook, 'Danh_sach_benh_nhan.xlsx');
+}
+
+function openAddModal() {
+    let newCount = 0;
+    try {
+        isEditMode = false;
+        editingId = null;
+        document.getElementById('edit-name').value = '';
+        document.getElementById('edit-gender').value = '' || "Nam";
+        document.getElementById('edit-dob').value = '';
+	document.getElementById('edit-codeid').value = '';
+        document.getElementById('edit-cccd').value = '';
+	document.getElementById('edit-department').value = '';
+	document.getElementById('edit-unit').value = '';
+	document.getElementById('edit-requires-xray').checked = false;
+	document.getElementById('edit-requires-lab').checked = false;
+	document.getElementById('checkin-management').innerHTML = '';
+	document.getElementById('checkin-management').classList.add('hidden');
+	editingCheckInSnapshot = null;
+
+
+        document.getElementById('edit-error').classList.add('hidden');
+
+        document.getElementById('edit-modal-title').innerText = "Thêm bệnh nhân";
+
+        document.getElementById('edit-modal').classList.remove('hidden');
+	document.getElementById('edit-modal').classList.add('flex');
+
+    } catch (e) {
+        console.error("Lỗi openAddModal:", e);
+    }
+}
+
+
+function openEditModal(id) {
+    const p = patients.find(x => x.id === id);
+    if (!p) return;
+    isEditMode = true;
+    editingId = id;
+
+    document.getElementById('edit-name').value = p.name;
+    document.getElementById('edit-gender').value = p.gender || "Nam";
+    document.getElementById('edit-dob').value = p.dob || '';
+    document.getElementById('edit-codeid').value = p.codeid || '';
+    document.getElementById('edit-cccd').value = p.cccd;
+    document.getElementById('edit-department').value = p.department || '';
+    document.getElementById('edit-unit').value = p.unit || '';
+    document.getElementById('edit-requires-xray').checked = Boolean(p.requiresXray);
+    document.getElementById('edit-requires-lab').checked = Boolean(p.requiresLab);
+    editingCheckInSnapshot = {
+        patientId: id,
+        checkIns: { ...(p.checkIns || {}) },
+        checkInTime: p.checkInTime,
+        status: p.status
+    };
+    renderCheckInManagement(p);
+
+    document.getElementById('edit-error').classList.add('hidden');
+    document.getElementById('edit-modal-title').innerText = "Sửa bệnh nhân";
+    document.getElementById('edit-modal').classList.remove('hidden');
+    document.getElementById('edit-modal').classList.add('flex');
+setTimeout(() => {
+    const nameInput = document.getElementById('edit-name');
+    nameInput.focus();
+    nameInput.select();
+}, 100);
+}
+
+function formatDateVN(dateStr) {
+    if (!dateStr) return '';
+
+    const date = new Date(dateStr);
+
+    if (isNaN(date.getTime())) return dateStr;
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+}
+
+function formatDateInput(dateStr) {
+    if (!dateStr) return "";
+    const parts = dateStr.split(/[\/\-]/);
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    }
+    return "";
+}
+
+function closeEditModal() {
+    if (editingCheckInSnapshot) {
+        const patient = patients.find(item => item.id === editingCheckInSnapshot.patientId);
+        if (patient) {
+            patient.checkIns = { ...editingCheckInSnapshot.checkIns };
+            if (editingCheckInSnapshot.checkInTime === undefined) {
+                delete patient.checkInTime;
+            } else {
+                patient.checkInTime = editingCheckInSnapshot.checkInTime;
+            }
+            patient.status = editingCheckInSnapshot.status;
+        }
+        editingCheckInSnapshot = null;
+        updateUI();
+    }
+    document.getElementById('edit-modal').classList.add('hidden');
+    document.getElementById('edit-modal').classList.remove('flex');
+}
+
+function saveEdit() {
+    try {
+        const codeid = document.getElementById('edit-codeid').value.trim();
+        const name = document.getElementById('edit-name').value.trim();
+        const gender = document.getElementById('edit-gender').value;
+        const dob = document.getElementById('edit-dob').value;
+        const cccd = document.getElementById('edit-cccd').value;
+	const department = document.getElementById('edit-department').value;
+	const unit = document.getElementById('edit-unit').value;
+        const requiresXray = document.getElementById('edit-requires-xray').checked;
+        const requiresLab = document.getElementById('edit-requires-lab').checked;
+        const errorEl = document.getElementById('edit-error');
+
+        if (!name) {
+            errorEl.innerText = "Vui lòng nhập tên";
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        if (isEditMode) {
+            // ✏️ SỬA
+            const p = patients.find(p => p.id === editingId);
+            if (p) {
+		p.codeid = codeid;
+                p.name = name;
+                p.gender = gender;
+                p.dob = dob;
+                p.cccd = cccd;
+		p.department = department;
+		p.unit = unit;
+		p.requiresXray = requiresXray;
+		p.requiresLab = requiresLab;
+		p.checkIns = p.checkIns || {};
+		syncReceptionStatus(p);
+            }
+	showToast(`Chỉnh sửa bệnh nhân thành công`);
+        } else {
+            // ➕ THÊM
+            const newPatient = {
+                id: 'BN' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+                stt: patients.length + 1,
+		codeid,
+                name,
+                gender,
+                dob,
+                cccd,
+		department,
+		unit,
+                requiresXray,
+                requiresLab,
+                checkIns: {},
+                status: 'pending'
+            };
+
+            patients.push(newPatient); // ❗ QUAN TRỌNG
+	showToast(`Thêm bệnh nhân thành công`);
+        }
+
+        saveData();
+        updateUI();
+
+        editingCheckInSnapshot = null;
+        document.getElementById('edit-modal').classList.add('hidden');
+
+    } catch (e) {
+        console.error("Lỗi saveEdit:", e);
+    }
+
+}
+
+
+function toggleSaveButton() {
+    const name = document.getElementById('edit-name').value.trim();
+    const cccd = document.getElementById('edit-cccd').value.trim();
+    const btn = document.getElementById('save-btn');
+
+    const isDuplicate = patients.some(p => 
+        p.cccd === cccd && p.id !== editingId
+    );
+
+    const valid = name && !isDuplicate;
+
+    btn.disabled = !valid;
+    btn.classList.toggle('opacity-50', !valid);
+}
+
+function formatDisplayDate(date) {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toLocaleDateString('vi-VN');
+}
+
+function changePage(step) {
+    currentPage += step;
+    updateUI();
+}
+
+function changePageSize(size) {
+    pageSize = parseInt(size);
+    currentPage = 1;
+    updateUI();
+}
+
+
+function printSingleBarcode(id) {
+    const p = patients.find(p => p.id === id);
+    if (!p) return;
+
+    const printWindow = window.open('', '_blank', 'width=1920,height=1080');
+
+    let barcodeHtml = '';
+
+    const safeId = p.id.replace(/\W/g, '');
+
+    const htmlContent = `
+        <html>
+        <head>
+            <title>In mã vạch</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 5mm;
+                font-family: Times New Roman, sans-serif;
+            }
+
+            .print-container {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr); /* 🔥 4 barcode / hàng */
+                gap: 0mm; /* 🔥 khoảng cách sát nhau */
+            }
+
+            .barcode-card {
+                border: 0.1mm dashed #ccc;
+                padding: 2mm;
+                height: 35mm; /* tối ưu để vừa A4 */
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                box-sizing: border-box;
+                page-break-inside: avoid;
+            }
+
+            .label {
+                font-size: 7px;
+                font-weight: bold;
+                color: #555;
+            }
+
+            .name {
+                font-size: 11px;
+                font-weight: 800;
+                margin: 2px 0;
+            }
+
+            .info {
+                font-size: 8px;
+                color: #444;
+                margin-bottom: 2px;
+            }
+
+            .id-text {
+                font-size: 9px;
+                font-family: monospace;
+                margin-top: 2px;
+            }
+
+            svg {
+                width: 100%;
+                height: 35px;
+            }
+
+            @media print {
+                @page {
+                    size: A4;
+                    margin: 5mm;
+                }
+            }
+        </style>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+        </head>
+        <body>
+<div class="print-container">
+            <div class="barcode-card">
+                <div class="label">PKĐK CENTER LAB VIỆT NAM</div>
+                <div class="name">${p.name.toUpperCase()}</div>
+                <div class="info">Giới tính: ${p.gender} | ${formatDateVN(p.dob)}</div>
+                <svg id="p-bar-${safeId}"></svg>
+                <div class="id-text">${p.id}</div>
+            </div>
+</div>
+            <script>
+                window.onload = function() {
+                    JsBarcode("#p-bar-${safeId}", "${p.id}", {
+                        format: "CODE128",
+                        width: 1.2,
+                        height: 35,
+                        displayValue: false,
+			margin: 0
+                    });
+
+                    setTimeout(() => {
+                        window.print();
+                        window.close();
+                    }, 500);
+                };
+            <\/script>
+
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+}
+
+function printSelected() {
+    if (selectedIds.size === 0) {
+        showToast("Chưa chọn bệnh nhân!");
+        return;
+    }
+
+    const selectedPatients = patients.filter(p => selectedIds.has(p.id));
+
+    const printWindow = window.open('', '_blank', 'width=1920,height=1080');
+
+    let barcodeHtml = '';
+
+    selectedPatients.forEach(p => {
+        const safeId = p.id.replace(/\W/g, '');
+
+        barcodeHtml += `
+            <div class="barcode-card">
+                <div class="label">PKĐK CENTER LAB VIỆT NAM</div>
+                <div class="name">${p.name.toUpperCase()}</div>
+                <div class="info">Giới tính: ${p.gender} | ${formatDateVN(p.dob)}</div>
+                <svg id="p-bar-${safeId}"></svg>
+                <div class="id-text">${p.id}</div>
+            </div>
+        `;
+    });
+
+    const htmlContent = `
+        <html>
+        <head>
+            <title>In mã vạch</title>
+<style>
+            body {
+                margin: 0;
+                padding: 5mm;
+                font-family: Times New Roman, sans-serif;
+            }
+
+            .print-container {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr); /* 🔥 4 barcode / hàng */
+                gap: 0mm; /* 🔥 khoảng cách sát nhau */
+            }
+
+            .barcode-card {
+                border: 0.1mm dashed #ccc;
+                padding: 2mm;
+                height: 35mm; /* tối ưu để vừa A4 */
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                box-sizing: border-box;
+                page-break-inside: avoid;
+            }
+
+            .label {
+                font-size: 7px;
+                font-weight: bold;
+                color: #555;
+            }
+
+            .name {
+                font-size: 11px;
+                font-weight: 800;
+                margin: 2px 0;
+            }
+
+            .info {
+                font-size: 8px;
+                color: #444;
+                margin-bottom: 2px;
+            }
+
+            .id-text {
+                font-size: 9px;
+                font-family: monospace;
+                margin-top: 2px;
+            }
+
+            svg {
+                width: 100%;
+                height: 35px;
+            }
+
+            @media print {
+                @page {
+                    size: A4;
+                    margin: 5mm;
+                }
+            }
+        </style>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+        </head>
+
+
+        <body>
+            <div class="print-container">
+                ${barcodeHtml}
+            </div>
+
+            <script>
+                window.onload = () => {
+                    ${selectedPatients.map(p => {
+                        const safeId = p.id.replace(/\W/g, '');
+                        return `JsBarcode("#p-bar-${safeId}", "${p.id}", {
+			format: "CODE128",
+			width: 1.2,
+                        height: 35,
+			displayValue: false,
+			margin: 0
+		});`;
+                    }).join('\n')}
+
+                    setTimeout(() => {
+                        window.print();
+                        window.close();
+                    }, 500);
+                };
+            <\/script>
+
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+}
+
+function backupData(){
+
+    const data = {
+
+        exportDate: new Date(),
+
+        patients: patients
+
+    };
+
+    const blob = new Blob(
+        [JSON.stringify(data,null,2)],
+        {type:"application/json"}
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+
+    const today =
+        new Date().toISOString()
+        .slice(0,10);
+
+    a.href = url;
+
+    a.download =
+        `backup-${today}.json`;
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+}
+
+function restoreData(){
+
+    document
+        .getElementById(
+            'restore-file'
+        )
+        .click();
+
+}
+
+function handleRestore(event){
+
+    const file =
+        event.target.files[0];
+
+    if(!file) return;
+
+    const reader =
+        new FileReader();
+
+    reader.onload =
+    function(e){
+
+        try{
+
+            const data =
+            JSON.parse(
+                e.target.result
+            );
+
+            if (!Array.isArray(data.patients)) {
+
+                alert(
+                "File không hợp lệ"
+                );
+
+                return;
+            }
+
+            if(
+                !confirm(
+                    `Khôi phục ${data.patients.length} bệnh nhân?`
+                )
+            ){
+
+                return;
+            }
+
+            patients = data.patients.map(patient => ({
+                ...patient,
+                requiresXray: parseImportBoolean(patient.requiresXray),
+                requiresLab: parseImportBoolean(patient.requiresLab),
+                checkIns: patient.checkIns || {}
+            }));
+            saveData();
+            updateUI();
+
+            alert(
+                "Khôi phục thành công"
+            );
+
+        }
+
+        catch(error){
+
+            alert(
+                "Lỗi đọc file"
+            );
+
+            console.error(error);
+
+        }
+
+    }
+
+    reader.readAsText(file);
+
+}
+
+
+function updateUnitDropdown() {
+    const unitSelect = document.getElementById('unit-filter');
+    if (!unitSelect) return;
+    const currentSelected = unitSelect.value;
+    const uniqueUnits = [...new Set(patients.map(p => p.unit).filter(unit => unit && unit.trim() !== ''))].sort((a, b) => a.localeCompare(b, 'vi'));
+    unitSelect.replaceChildren(new Option('Tất cả đơn vị', 'all'));
+    uniqueUnits.forEach(unit => unitSelect.add(new Option(unit, unit)));
+    if (uniqueUnits.includes(currentSelected)) {
+        unitSelect.value = currentSelected;
+    } else {
+        unitSelect.value = 'all';
+    }
+}
+
+</script>
+
+<div id="cloud-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-black text-slate-800"><i class="fa-solid fa-cloud text-indigo-600 mr-2"></i>Đồng bộ nhiều trạm</h2>
+            <button type="button" onclick="closeCloudModal()" class="text-slate-400 hover:text-red-500" aria-label="Đóng">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <p id="cloud-sync-status" class="text-sm text-slate-600 mb-4" role="status">Chưa đăng nhập Supabase.</p>
+
+        <form onsubmit="signInToCloud(event)" class="space-y-3">
+            <label class="block text-xs font-bold text-slate-600">
+                SUPABASE PROJECT URL
+                <input id="cloud-project-url" type="url" required placeholder="https://xxxxxxxx.supabase.co" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm font-normal">
+            </label>
+            <label class="block text-xs font-bold text-slate-600">
+                SUPABASE ANON / PUBLISHABLE KEY
+                <input id="cloud-anon-key" type="password" required autocomplete="off" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm font-normal">
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="block text-xs font-bold text-slate-600">
+                    EMAIL ĐƯỢC CẤP QUYỀN
+                    <input id="cloud-email" type="email" required autocomplete="username" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm font-normal">
+                </label>
+                <label class="block text-xs font-bold text-slate-600">
+                    MẬT KHẨU SUPABASE
+                    <input id="cloud-password" type="password" required autocomplete="current-password" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm font-normal">
+                </label>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Đăng nhập & đồng bộ</button>
+                <button type="button" onclick="syncCloudNow()" class="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-200">Đồng bộ lại</button>
+                <button type="button" onclick="logoutFromCloud()" class="rounded-xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-100">Đăng xuất</button>
+            </div>
+        </form>
+
+        <details class="mt-5 rounded-xl border border-slate-200 p-4">
+            <summary class="cursor-pointer text-sm font-bold text-slate-700">Thiết lập Supabase lần đầu</summary>
+            <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-600">
+                <li>Tạo project Supabase và thêm người dùng trong mục Authentication → Users. Tắt đăng ký công khai.</li>
+                <li>Mở SQL Editor và chạy lần lượt ba đoạn SQL: tạo bảng/chính sách, thêm email được phép, rồi tạo RPC gộp lượt quét.</li>
+                <li>Lấy Project URL và anon/public key trong Project Settings → API; không dùng service_role/secret key.</li>
+                <li>Nhập thông tin trên từng thiết bị và đăng nhập bằng tài khoản đã được cấp.</li>
+            </ol>
+            <p class="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">Đồng bộ gửi toàn bộ thông tin bệnh nhân hiện có, gồm CCCD, ngày sinh, giới tính, đơn vị/bộ phận, chỉ định và lượt quét. Không nhập kết quả khám vào hệ thống. Chỉ đăng nhập trên thiết bị tin cậy và chỉ cấp tài khoản cho nhân viên được phép; người dùng có quyền trong cùng project có thể xem dữ liệu này.</p>
+            <textarea id="supabase-setup-sql" readonly class="mt-3 h-44 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs">create table if not exists public.health_patients (
+  id text primary key,
+  patient_data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.health_patients enable row level security;
+
+grant select, insert, update, delete on public.health_patients to authenticated;
+
+create table if not exists public.health_sync_users (
+  email text primary key
+);
+
+alter table public.health_sync_users enable row level security;
+
+drop policy if exists "Authenticated users manage health patients" on public.health_patients;
+drop policy if exists "Authenticated users manage health patients" on public.health_sync_users;
+drop policy if exists "Users read own sync access" on public.health_sync_users;
+create policy "Users read own sync access"
+  on public.health_sync_users
+  for select
+  to authenticated
+  using (lower(email) = lower(auth.jwt()->>'email'));
+
+grant select on public.health_sync_users to authenticated;
+
+drop policy if exists "Allowlisted users manage health patients" on public.health_patients;
+create policy "Allowlisted users manage health patients"
+  on public.health_patients
+  for all
+  to authenticated
+  using (
+    exists (
+      select 1 from public.health_sync_users
+      where lower(email) = lower(auth.jwt()->>'email')
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.health_sync_users
+      where lower(email) = lower(auth.jwt()->>'email')
+    )
+  );</textarea>
+            <p class="mt-3 text-xs font-bold text-slate-600">Chỉ cấp quyền CSDL cho email cụ thể (thay bằng email nhân viên đã tạo trong Authentication → Users):</p>
+            <textarea id="supabase-users-sql" readonly class="mt-2 h-16 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs">insert into public.health_sync_users (email)
+values ('your-authorized-email@example.com')
+on conflict (email) do nothing;</textarea>
+            <button type="button" onclick="copySupabaseUsersSql()" class="mt-2 rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-white hover:bg-slate-700">Sao chép SQL cấp quyền email</button>
+            <p class="mt-3 text-xs font-bold text-slate-600">Thêm RPC để không ghi đè lượt quét khi nhiều trạm cập nhật cùng lúc:</p>
+            <textarea id="supabase-rpc-sql" readonly class="mt-2 h-56 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs">create or replace function public.merge_health_patient(p_id text, p_patient_data jsonb)
+returns void
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  insert into public.health_patients (id, patient_data, updated_at)
+  values (p_id, p_patient_data, now())
+  on conflict (id) do update
+  set patient_data =
+    (health_patients.patient_data || (excluded.patient_data - 'checkIns'))
+    || jsonb_build_object(
+      'checkIns',
+      coalesce(health_patients.patient_data->'checkIns', '{}'::jsonb)
+      || coalesce(excluded.patient_data->'checkIns', '{}'::jsonb)
+    ),
+    updated_at = now();
+end;
+$$;
+
+revoke all on function public.merge_health_patient(text, jsonb) from public, anon;
+grant execute on function public.merge_health_patient(text, jsonb) to authenticated;</textarea>
+            <button type="button" onclick="copySupabaseRpcSql()" class="mt-2 rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-white hover:bg-slate-700">Sao chép SQL RPC</button>
+            <button type="button" onclick="copySupabaseSql()" class="mt-2 rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-white hover:bg-slate-700">Sao chép SQL cấu hình</button>
+            <p class="mt-2 text-xs text-slate-500">Mỗi email phải được tạo trong Authentication → Users và thêm vào health_sync_users. Khóa anon/public không phải khóa bí mật; RLS chỉ cho email trong danh sách này truy cập dữ liệu.</p>
+        </details>
+    </div>
+</div>
+
+<div id="edit-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50">
+
+    <div class="bg-white rounded-3xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-[fadeIn_.2s_ease]">
+
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="edit-modal-title" class="text-xl font-black text-slate-800"></h2>
+            <button onclick="closeEditModal()" class="text-slate-400 hover:text-red-500">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Form -->
+        <div class="space-y-3">
+
+            <div>
+                <label class="text-xs font-bold text-slate-500">HỌ VÀ TÊN</label>
+                <input id="edit-name" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs font-bold text-slate-500">GIỚI TÍNH</label>
+                    <select id="edit-gender" class="w-full p-3 border rounded-xl">
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-500">NGÀY SINH</label>
+                    <input id="edit-dob" type="date" class="w-full p-3 border rounded-xl">
+                </div>
+            </div>
+<div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-xs font-bold text-slate-500">ID</label>
+                <input id="edit-codeid" class="w-full p-3 border rounded-xl">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-slate-500">SỐ CCCD</label>
+                <input id="edit-cccd" class="w-full p-3 border rounded-xl">
+            </div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+    <label class="text-xs font-bold text-slate-500">BỘ PHẬN</label>
+        
+
+    <input
+        type="text"
+        id="edit-department"
+        class="w-full p-3 border rounded-xl">
+</div>
+
+<div>
+    <label class="text-xs font-bold text-slate-500">ĐƠN VỊ</label>
+        
+
+    <input
+        type="text"
+        id="edit-unit"
+        class="w-full p-3 border rounded-xl">
+</div>
+</div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <label class="flex items-center gap-2 rounded-xl border p-3 text-sm font-semibold text-slate-600">
+                    <input id="edit-requires-xray" type="checkbox" class="h-4 w-4">
+                    Cần chụp X-Quang
+                </label>
+                <label class="flex items-center gap-2 rounded-xl border p-3 text-sm font-semibold text-slate-600">
+                    <input id="edit-requires-lab" type="checkbox" class="h-4 w-4">
+                    Cần xét nghiệm
+                </label>
+            </div>
+
+            <section id="checkin-management" class="hidden space-y-2 border-t border-slate-100 pt-4">
+                <div>
+                    <h3 class="text-sm font-black text-slate-700">Trạng thái các trạm</h3>
+                    <p class="text-xs text-slate-500">Thay đổi chỉ được áp dụng khi nhấn Lưu. Nhấn Hủy để khôi phục lượt quét.</p>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-between items-center mt-6">
+
+            <span id="edit-error" class="text-red-500 text-sm hidden"></span>
+
+            <div class="flex gap-2 ml-auto">
+                <button onclick="closeEditModal()" 
+                    class="px-4 py-2 bg-slate-200 rounded-xl font-semibold">
+                    Hủy
+                </button>
+
+                <button id="save-btn" onclick="saveEdit()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Lưu
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="bulk-bar" 
+    class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-white shadow-xl px-6 py-3 rounded-xl border flex items-center gap-4 z-50">
+
+    <span id="selected-count" class="font-semibold text-slate-700"></span>
+
+    <button onclick="deleteSelected()" 
+        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+        <i class="fa-solid fa-trash mr-1"></i> Xóa
+    </button>
+
+<button
+    onclick="printSelected()"
+    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+
+    <i class="fa-solid fa-print mr-1"></i> In đã chọn
+</button>
+
+</div>
+
+</body>
+</html>
